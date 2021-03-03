@@ -1,0 +1,108 @@
+% Saved by Prover9-Mace4 Version 0.5, December 2007.
+
+set(ignore_option_dependencies). % GUI handles dependencies
+
+if(Prover9). % Options for Prover9
+  assign(max_seconds, 60).
+end_if.
+
+if(Mace4).   % Options for Mace4
+  assign(domain_size, 3).
+  assign(start_size, 3).
+  assign(end_size, 3).
+  assign(max_models, 70).
+  assign(max_seconds, 60).
+end_if.
+
+formulas(assumptions).
+
+%Three gods A, B, and C are called, in no particular order, True, False, and Random. 
+%True always speaks truly, False always speaks falsely, but whether Random speaks truly or falsely is a completely random matter. 
+%Your task is to determine the identities of A, B, and C by asking three yes-no questions; each question must be put to exactly one god. 
+%The gods understand English, but will answer all questions in their own language, in which the words for yes and no are da and ja, in some order. 
+%You do not know which word means which.
+
+%doua cuvinte, da si ja care inseamna da si nu(nu se stie care-i care)
+ja <-> -da.
+
+%trei zei care unul spune adevarul, unul minte si unul random
+( true(A) & false(B) & rand(C) ) | ( true(A)  & rand(B) & false(C) ) | ( false(A) & true(B) & rand(C)  ) | ( false(A) & rand(B) & true(C) ) | ( rand(A) & true(B) & false(C) ) | ( rand(A) & false(B) & true(C) ).
+
+true(A) <-> ( -true(B) & -true(C) ).
+true(B) <-> ( -true(A) & -true(C) ).
+true(C) <-> ( -true(A) & -true(B) ).
+
+false(A) <-> ( -false(B) & -false(C) ).
+false(B) <-> ( -false(A) & -false(C) ).
+false(C) <-> ( -false(A) & -false(B) ).
+
+rand(A) <-> ( -rand(B) & -rand(C) ).
+rand(B) <-> ( -rand(A) & -rand(C) ).
+rand(C) <-> ( -rand(A) & -rand(B) ).
+
+all x ( -true(x) & -false(x) -> rand(x) ).
+all x ( -true(x) & -rand(x) -> false(x) ).
+all x ( -false(x) & -rand(x) -> true(x) ). 
+
+%aici avem variabilele care nu stiu(si vor sa afle) care este fiecare dintre zei, pe baza celor 3 intrebari care alcatuiesc solutia
+isTrue(A) <-> ( -isTrue(B) & -isTrue(C) ).
+isTrue(B) <-> ( -isTrue(A) & -isTrue(C) ).
+isTrue(C) <-> ( -isTrue(A) & -isTrue(B) ).
+
+isFalse(A) <-> ( -isFalse(B) & -isFalse(C) ).
+isFalse(B) <-> ( -isFalse(A) & -isFalse(C) ).
+isFalse(C) <-> ( -isFalse(A) & -isFalse(B) ).
+
+isRand(A) <-> ( -isRand(B) & -isRand(C) ).
+isRand(B) <-> ( -isRand(A) & -isRand(C) ).
+isRand(C) <-> ( -isRand(A) & -isRand(B) ).
+
+all x ( -isTrue(x) & -isFalse(x) -> isRand(x) ).
+all x ( -isTrue(x) & -isRand(x) -> isFalse(x) ).
+all x ( -isFalse(x) & -isRand(x) -> isTrue(x) ). 
+
+%ask god B "If I asked you 'Is A Random?', would you say ja?"
+%results in the answer ja if the truthful answer to q1 is yes, and the answer da if the truthful answer to Q is no
+(-rand(B)) -> ( ( (  rand(A) & ja ) | (  rand(A) & da ) ) <-> q1_ja ).
+(-rand(B)) -> ( ( ( -rand(A) & ja ) | ( -rand(A) & da ) ) <-> q1_da ).
+  rand(B)  -> ( q1_ja | q1_da ). 
+
+q1_ja <-> -q1_da.
+
+%use answer from q1 to determine who surely isn't random
+q1_ja -> ( isRand(B) | isRand(A) ). %thus god C surely isnt the random
+q1_da -> ( isRand(B) | isRand(C) ). %thus god A surely isnt the random
+
+%ask god that we found isnt random "If I asked you 'Are you False?', would you say ja?"
+%an answer of da indicates that he is True and an answer of ja indicates that he is False
+q1_ja -> ( ( ( false(C) & ja ) | ( false(C) & da ) ) <-> q2_ja ).
+q1_ja -> ( ( (  true(C) & ja ) | (  true(C) & da ) ) <-> q2_da ). 
+q1_da -> ( ( ( false(A) & ja ) | ( false(A) & da ) ) <-> q2_ja ).
+q1_da -> ( ( (  true(A) & ja ) | (  true(A) & da ) ) <-> q2_da ). 
+
+q2_ja <-> -q2_da.
+
+%use answer from g2 to determine who is true or who is false
+( q1_ja & q2_ja ) -> isFalse(C).
+( q1_ja & q2_da ) ->  isTrue(C).
+( q1_da & q2_ja ) -> isFalse(A).
+( q1_da & q2_da ) ->  isTrue(A).
+
+%ask same god "If I asked you 'Is B Random?', would you say ja?"
+%If the answer is ja, B is Random; if the answer is da, the god you have not yet spoken to is Random
+( (  rand(B) & ja ) | (  rand(B) & da ) ) <-> q3_ja.
+( ( -rand(B) & ja ) | ( -rand(B) & da ) ) <-> q3_da.
+
+q3_ja <-> -q3_da.
+
+%use answer from q3 to determine who is random
+q3_ja -> isRand(B).
+q3_da & q1_ja -> isRand(A).
+q3_da & q1_da -> isRand(C).
+
+end_of_list.
+
+formulas(goals).
+
+end_of_list.
+
